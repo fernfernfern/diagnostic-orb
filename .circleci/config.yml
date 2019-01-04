@@ -23,7 +23,7 @@ jobs:
             --request POST \
             --form config=@test.orb.yml \
             --form notify=false \
-              https://circleci.com/api/v1.1/project/github/fernfernfern/diag-orb/tree/master
+              https://circleci.com/api/v1.1/project/github/CircleCI-Public/diagnostic-orb/tree/$CIRCLE_BRANCH
 workflows:
   daig-orb:
     jobs:
