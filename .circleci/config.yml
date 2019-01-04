@@ -1,0 +1,30 @@
+version: 2.1
+
+executors:
+  default:
+    docker:
+      - image: circleci/python
+
+jobs:
+  orb-build-test:
+    executor: default
+    steps:
+      - run: curl -fLSs https://circle.ci/cli | sudo bash
+      - checkout
+      - run: circleci config pack orb | tee packed.yml
+      - store_artifacts:
+          path: packed.yml
+          destination: orb
+      - run: circleci orb validate packed.yml
+      - run: circleci orb publish packed.yml fernfernfern/diag@dev:volatile --token ${CLI_TOKEN}
+      - run: circleci config process .circleci/test.orb.yml > test.orb.yml
+      - run: |
+          curl --user ${CLI_TOKEN}: \
+            --request POST \
+            --form config=@test.orb.yml \
+            --form notify=false \
+              https://circleci.com/api/v1.1/project/github/fernfernfern/diag-orb/tree/master
+workflows:
+  daig-orb:
+    jobs:
+      - orb-build-test
