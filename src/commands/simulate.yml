@@ -10,5 +10,5 @@ sim-cache:
   steps:
     - save_cache:
         key: -v1-<< parameters.cache-param >>-{{ arch }}
-        paths: 
+        paths:
           - << parameters.data-dir>>

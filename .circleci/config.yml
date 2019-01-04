@@ -1,11 +1,59 @@
 version: 2.1
 
+orbs:
+  orb-tools: circleci/orb-tools@2.0.2
+  diagnostic-orb: circleci/diagnostic-orb@dev:alpha
+
 executors:
-  default:
+  cli:
+    resource_class: small
+    docker:
+      - image: circleci/circleci-cli
+
+  github:
+    resource_class: small
+    docker:
+      - image: cibuilds/github
+
+  lint:
+    resource_class: small
+    docker:
+      - image: singapore/lint-condo
+
+  python:
+    resource_class: small
     docker:
       - image: circleci/python
 
 jobs:
+  lint:
+    executor: lint
+    steps:
+      - checkout
+      - run: yamllint .
+
+  validate:
+    executor: cli
+    steps:
+      - checkout
+      - run: circleci orb validate src/@orb.yml
+
+  publish-dev:
+    executor: cli
+    steps:
+      - checkout
+
+      - run:
+          name: publish dev versions
+          command: |
+            # for integration testing
+            circleci orb publish src/@orb.yml circleci/azure-cli@dev:alpha --token $CIRCLE_TOKEN
+
+            # for transparency
+            circleci orb publish src/@orb.yml circleci/azure-cli@dev:$CIRCLE_BRANCH-${CIRCLE_SHA1:0:7} --token $CIRCLE_TOKEN
+
+            # for potentially promoting to prod
+            circleci orb publish src/@orb.yml circleci/azure-cli@dev:${CIRCLE_SHA1:0:7} --token $CIRCLE_TOKEN
   orb-build-test:
     executor: default
     steps:
