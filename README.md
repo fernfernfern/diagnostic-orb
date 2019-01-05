@@ -1,4 +1,4 @@
-# Diagnostic Orb [![CircleCI status](https://circleci.com/gh/CircleCI-Public/diagnostic-orb.svg)](https://circleci.com/gh/CircleCI-Public/diagnostic-orb)
+# Diagnostic Orb [!(https://circleci.com/gh/CircleCI-Public/diagnostic-orb.svg)](https://circleci.com/gh/CircleCI-Public/diagnostic-orb)
 
 The diagnostic orb is intented to serve two purposes:
 
