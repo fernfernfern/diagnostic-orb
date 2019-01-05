@@ -9,7 +9,7 @@ executors:
   cli:
     resource_class: small
     docker:
-      - image: circleci/circleci-cli
+      - image: circleci/circleci-cli:0.1.5060
 
   github:
     resource_class: small
