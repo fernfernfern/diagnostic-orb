@@ -115,7 +115,8 @@ jobs:
       - diagnostic-orb/env-info
       - diagnostic-orb/ios-logs
       - diagnostic-orb/memory
-      - diagnostic-orb/sample-test-data
+      - diagnostic-orb/sample-test-data:
+          upload: true
       - diagnostic-orb/simulate
       - diagnostic-orb/post-steps
 
