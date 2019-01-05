@@ -47,3 +47,5 @@ daignostic-orb/sample-test-data:
 
 ## Contributing
 We welcome [issues](https://github.com/CircleCI-Public/diagnostic-orb/issues) (bugs or feature requests) and [pull requests](https://github.com/CircleCI-Public/diagnostic-orb/pulls)!
+
+For larger discussions, there is also an active community at https://discuss.circleci.com/c/orbs.
