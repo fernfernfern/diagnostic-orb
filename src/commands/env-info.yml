@@ -21,5 +21,3 @@ steps:
         npm --version || true
         npm ls --global > << parameters.data-dir >>/npm-global.log || true
         npm ls > << parameters.data-dir >>/npm.log || true
-
-
