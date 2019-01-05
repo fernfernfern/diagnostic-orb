@@ -44,3 +44,6 @@ Create sample test junit output for Test Summary report. Helpful if you want to 
 daignostic-orb/sample-test-data:
   upload: true
 ```
+
+## Contributing
+We welcome [issues](https://github.com/CircleCI-Public/diagnostic-orb/issues) (bugs or feature requests) and [pull requests](https://github.com/CircleCI-Public/diagnostic-orb/pulls)!
