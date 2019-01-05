@@ -3,6 +3,7 @@ version: 2.1
 orbs:
   orb-tools: circleci/orb-tools@2.0.2
   diagnostic-orb: circleci/diagnostic-orb@dev:alpha
+  circle-compare-url: iynere/compare-url@0.4.4
 
 executors:
   cli:
@@ -20,10 +21,9 @@ executors:
     docker:
       - image: singapore/lint-condo
 
-  python:
-    resource_class: small
-    docker:
-      - image: circleci/python
+  macos:
+    macos:
+      xcode: "10.1.0"
 
 jobs:
   lint:
@@ -36,44 +36,170 @@ jobs:
     executor: cli
     steps:
       - checkout
-      - run: circleci orb validate src/@orb.yml
+
+      - orb-tools/pack:
+          source: src
+          destination: orb.yml
+
+      - run: circleci orb validate orb.yml
+
+      - store_artifacts:
+          path: orb.yml
+
+      - persist_to_workspace:
+          root: .
+          paths:
+            - orb.yml
 
   publish-dev:
     executor: cli
     steps:
       - checkout
 
+      - attach_workspace:
+          at: workspace
+
       - run:
-          name: publish dev versions
+          name: publish various dev versions
           command: |
-            # for integration testing
-            circleci orb publish src/@orb.yml circleci/azure-cli@dev:alpha --token $CIRCLE_TOKEN
+            # dev:alpha, for integration testing
+            circleci orb publish workspace/orb.yml circleci/diagnostic-orb@dev:alpha --token $CIRCLE_TOKEN
 
-            # for transparency
-            circleci orb publish src/@orb.yml circleci/azure-cli@dev:$CIRCLE_BRANCH-${CIRCLE_SHA1:0:7} --token $CIRCLE_TOKEN
+            # branch + sha, for transparency
+            circleci orb publish workspace/orb.yml circleci/diagnostic-orb@dev:$CIRCLE_BRANCH-${CIRCLE_SHA1:0:7} --token $CIRCLE_TOKEN
 
-            # for potentially promoting to prod
-            circleci orb publish src/@orb.yml circleci/azure-cli@dev:${CIRCLE_SHA1:0:7} --token $CIRCLE_TOKEN
-  orb-build-test:
-    executor: default
-    steps:
-      - run: curl -fLSs https://circle.ci/cli | sudo bash
-      - checkout
-      - run: circleci config pack src | tee packed.yml
+            # sha only, for potential prod promotion
+            circleci orb publish workspace/orb.yml circleci/diagnostic-orb@dev:${CIRCLE_SHA1:0:7} --token $CIRCLE_TOKEN
+
       - store_artifacts:
-          path: packed.yml
-          destination: orb
-      - run: circleci orb validate packed.yml
-      - run: circleci orb publish packed.yml fernfernfern/diag@dev:volatile --token ${CIRCLE_TOKEN}
-      - run: circleci config process .circleci/test.orb.yml > test.orb.yml
+          path: workspace/orb.yml
+
+  trigger-integration:
+    executor: github
+    parameters:
+      tag:
+        type: enum
+        default: "integration"
+        enum: ["integration", master]
+    steps:
+      - checkout
+
+      - add_ssh_keys:
+          fingerprints:
+            - "c5:8f:90:19:45:fc:2f:65:1e:42:1f:4e:8b:15:6c:cb"
+
+      - run:
+          name: git config
+          command: |
+            git config --global user.email "$CIRCLE_USERNAME@users.noreply.github.com"
+            git config --global user.name "$CIRCLE_USERNAME"
+
       - run: |
-          curl --user ${CIRCLE_TOKEN}: \
-            --request POST \
-            --form config=@test.orb.yml \
-            --form notify=false \
-              https://circleci.com/api/v1.1/project/github/CircleCI-Public/diagnostic-orb/tree/$CIRCLE_BRANCH
+          INTEGRATION_TAG=<<parameters.tag>>-$CIRCLE_BRANCH-${CIRCLE_SHA1:0:7}
+          git tag $INTEGRATION_TAG
+          git push origin $INTEGRATION_TAG
+
+  integration-tests:
+    executor: macos
+    steps:
+      - checkout
+
+      - run: |
+          mkdir -p ~/project/fastlane
+          echo fastfile > ~/project/fastlane/Fastfile
+          echo appfile > ~/project/fastlane/Appfile
+          echo gymfile > ~/project/fastlane/Gymfile
+          mkdir -p ~/project/ccidiag.xcodeproj
+          echo project > ~/project/ccidiag.xcodeproj/project.pbxproj
+
+      - diagnostic-orb/env-info
+      - diagnostic-orb/ios-logs
+      - diagnostic-orb/memory
+      - diagnostic-orb/sample-test-data
+      - diagnostic-orb/simulate
+      - diagnostic-orb/post-steps
+
+  dev-promote-prod:
+    executor: cli
+    steps:
+      - checkout
+
+      - circle-compare-url/reconstruct
+
+      - run:
+          name: major release if changes to src/commands or src/jobs, minor if to src/examples or src/@orb.yml, otherwise patch
+          command: |
+            CIRCLE_COMPARE_URL=$(cat CIRCLE_COMPARE_URL.txt)
+
+            COMMIT_RANGE=$(echo $CIRCLE_COMPARE_URL | sed 's:^.*/compare/::g')
+
+            echo "Commit range: $COMMIT_RANGE"
+
+            if [[ $(git diff $COMMIT_RANGE --name-status | grep -e "src/commands" -e "src/jobs") ]]; then
+              circleci orb publish promote circleci/diagnostic-orb@dev:${CIRCLE_SHA1:0:7} major --token $CIRCLE_TOKEN
+            elif [[ $(git diff $COMMIT_RANGE --name-status | grep -e "src/examples" -e "src/@orb.yml") ]]; then
+              circleci orb publish promote circleci/diagnostic-orb@dev:${CIRCLE_SHA1:0:7} minor --token $CIRCLE_TOKEN
+            else
+              circleci orb publish promote circleci/diagnostic-orb@dev:${CIRCLE_SHA1:0:7} patch --token $CIRCLE_TOKEN
+            fi
+
+integration-dev_filters: &integration-dev_filters
+  branches:
+    ignore: /.*/
+  tags:
+    only: /integration-.*/
+
+integration-master_filters: &integration-master_filters
+  branches:
+    ignore: /.*/
+  tags:
+    only: /master-.*/
+
 workflows:
-  daig-orb:
+  lint_pack-validate_publish-dev:
     jobs:
-      - orb-build-test:
+      - lint
+
+      - validate:
+          requires:
+            - lint
+
+      - publish-dev:
+          requires:
+            - validate
           context: orb-publishing
+
+      - trigger-integration:
+          name: trigger-integration-dev
+          requires:
+            - publish-dev
+          filters:
+            branches:
+              ignore: master
+
+      - trigger-integration:
+          name: trigger-integration-master
+          tag: master
+          requires:
+            - publish-dev
+          filters:
+            branches:
+              only: master
+
+  integration_tests-prod_deploy:
+    jobs:
+      # triggered by non-master branch commits
+      - integration-tests:
+          name: integration-tests-dev
+          filters: *integration-dev_filters
+
+      # triggered by master branch commits
+      - integration-tests:
+          name: integration-tests-master
+          filters: *integration-master_filters
+
+      - dev-promote-prod:
+          context: orb-publishing
+          filters: *integration-master_filters
+          requires:
+            - integration-tests-master
