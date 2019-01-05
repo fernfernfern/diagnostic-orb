@@ -94,10 +94,27 @@ jobs:
             git config --global user.email "$CIRCLE_USERNAME@users.noreply.github.com"
             git config --global user.name "$CIRCLE_USERNAME"
 
-      - run: |
-          INTEGRATION_TAG=<<parameters.tag>>-$CIRCLE_BRANCH-${CIRCLE_SHA1:0:7}
-          git tag $INTEGRATION_TAG
-          git push origin $INTEGRATION_TAG
+      - circle-compare-url/reconstruct
+
+      - run:
+          name: trigger integration workflow, possible patch / minor / major release
+          command: |
+            CIRCLE_COMPARE_URL=$(cat CIRCLE_COMPARE_URL.txt)
+
+            COMMIT_RANGE=$(echo $CIRCLE_COMPARE_URL | sed 's:^.*/compare/::g')
+
+            echo "Commit range: $COMMIT_RANGE"
+
+            if [[ $(git diff $COMMIT_RANGE --name-status | grep -e "src/commands" -e "src/jobs") ]]; then
+              INTEGRATION_TAG=<<parameters.tag>>-major-$CIRCLE_BRANCH-${CIRCLE_SHA1:0:7}
+            elif [[ $(git diff $COMMIT_RANGE --name-status | grep -e "src/examples" -e "src/@orb.yml") ]]; then
+              INTEGRATION_TAG=<<parameters.tag>>-minor-$CIRCLE_BRANCH-${CIRCLE_SHA1:0:7}
+            else
+              INTEGRATION_TAG=<<parameters.tag>>-patch-$CIRCLE_BRANCH-${CIRCLE_SHA1:0:7}
+            fi
+
+            git tag $INTEGRATION_TAG
+            git push origin $INTEGRATION_TAG
 
   integration-tests:
     executor: macos
@@ -122,27 +139,15 @@ jobs:
 
   dev-promote-prod:
     executor: cli
+    parameters:
+      release:
+        type: enum
+        default: "patch"
+        enum: ["patch", "minor", "major"]
     steps:
-      - checkout
-
-      - circle-compare-url/reconstruct
-
       - run:
           name: major release if changes to src/commands or src/jobs, minor if to src/examples or src/@orb.yml, otherwise patch
-          command: |
-            CIRCLE_COMPARE_URL=$(cat CIRCLE_COMPARE_URL.txt)
-
-            COMMIT_RANGE=$(echo $CIRCLE_COMPARE_URL | sed 's:^.*/compare/::g')
-
-            echo "Commit range: $COMMIT_RANGE"
-
-            if [[ $(git diff $COMMIT_RANGE --name-status | grep -e "src/commands" -e "src/jobs") ]]; then
-              circleci orb publish promote circleci/diagnostic-orb@dev:${CIRCLE_SHA1:0:7} major --token $CIRCLE_TOKEN
-            elif [[ $(git diff $COMMIT_RANGE --name-status | grep -e "src/examples" -e "src/@orb.yml") ]]; then
-              circleci orb publish promote circleci/diagnostic-orb@dev:${CIRCLE_SHA1:0:7} minor --token $CIRCLE_TOKEN
-            else
-              circleci orb publish promote circleci/diagnostic-orb@dev:${CIRCLE_SHA1:0:7} patch --token $CIRCLE_TOKEN
-            fi
+          command: circleci orb publish promote circleci/diagnostic-orb@dev:${CIRCLE_SHA1:0:7} <<parameters.release>> --token $CIRCLE_TOKEN
 
 integration-dev_filters: &integration-dev_filters
   branches:
@@ -200,7 +205,34 @@ workflows:
           filters: *integration-master_filters
 
       - dev-promote-prod:
+          name: dev-promote-patch
           context: orb-publishing
-          filters: *integration-master_filters
           requires:
             - integration-tests-master
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /master-patch.*/
+
+      - dev-promote-prod:
+          name: dev-promote-minor
+          context: orb-publishing
+          requires:
+            - integration-tests-master
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /master-minor.*/
+
+      - dev-promote-prod:
+          name: dev-promote-major
+          context: orb-publishing
+          requires:
+            - integration-tests-master
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /master-major.*/
