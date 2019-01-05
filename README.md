@@ -1,6 +1,6 @@
 # Diagnostic Orb
 
-The diagnostic orb is intented to serve two purposes.
+The diagnostic orb is intented to serve two purposes:
 
 1. Help guide people using CircleCI to solve problems and optimize their configurations.
 
