@@ -28,6 +28,10 @@ executors:
     macos:
       xcode: "10.1.0"
 
+  node:
+    docker:
+      - image: circleci/node
+
 jobs:
   lint:
     executor: lint
@@ -131,6 +135,15 @@ jobs:
       - diagnostic-orb/test-results
       - diagnostic-orb/store-report
 
+  integration-tests-3:
+    executor: node
+    steps:
+      - checkout
+
+      - diagnostic-orb/env-info
+      - diagnostic-orb/memory
+      - diagnostic-orb/store-report
+
   dev-promote-prod:
     executor: cli
     parameters:
@@ -207,7 +220,12 @@ workflows:
 
       - integration-tests-2:
           name: integration-tests-2-dev
-          requires: [integration-tests-1-dev]
+          pre-steps: *add-ssh-keys
+          filters: *integration-dev_filters
+
+      - integration-tests-3:
+          name: integration-tests-3-dev
+          requires: [integration-tests-1-dev, integration-tests-2-dev]
           pre-steps: *add-ssh-keys
           filters: *integration-dev_filters
           post-steps: *cleanup-git-tag
@@ -220,7 +238,12 @@ workflows:
 
       - integration-tests-2:
           name: integration-tests-2-master
-          requires: [integration-tests-1-master]
+          pre-steps: *add-ssh-keys
+          filters: *integration-dev_filters
+
+      - integration-tests-3:
+          name: integration-tests-3-master
+          requires: [integration-tests-1-master, integration-tests-2-master]
           pre-steps: *add-ssh-keys
           filters: *integration-master_filters
           post-steps: *cleanup-git-tag
@@ -229,7 +252,7 @@ workflows:
       - dev-promote-prod:
           name: dev-promote-patch
           context: orb-publishing
-          requires: [integration-tests-2-master]
+          requires: [integration-tests-3-master]
           filters:
             branches:
               ignore: /.*/
@@ -239,7 +262,7 @@ workflows:
       - dev-promote-prod:
           name: dev-promote-minor
           context: orb-publishing
-          requires: [integration-tests-2-master]
+          requires: [integration-tests-3-master]
           filters:
             branches:
               ignore: /.*/
@@ -249,7 +272,7 @@ workflows:
       - dev-promote-prod:
           name: dev-promote-major
           context: orb-publishing
-          requires: [integration-tests-2-master]
+          requires: [integration-tests-3-master]
           filters:
             branches:
               ignore: /.*/
