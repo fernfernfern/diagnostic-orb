@@ -18,8 +18,7 @@ steps:
         echo "If the command doesn't exist the file will be empty, and CircleCI will ignore it during the upload."
         echo "Can be used to discover enviromental information and installed packages."
         echo "----------------------------------------------------------------------------------------------------"
-        PWD=$(pwd)
-        echo "Working directory is: $PWD"
+        echo "Working directory is:" && pwd
         echo "Output will be stored in: <<parameters.data-dir>>" (creating it if it does not exist...)
         echo "----------------------------------------------------------------------------------------------------"
         mkdir -p <<parameters.data-dir>>

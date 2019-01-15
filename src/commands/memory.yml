@@ -17,8 +17,7 @@ steps:
         echo "----------------------------------------------------------------------------------------------------"
         echo "This command will copy memory usage information to a file, for debugging."
         echo "----------------------------------------------------------------------------------------------------"
-        PWD=$(pwd)
-        echo "Working directory is: $PWD"
+        echo "Working directory is:" && pwd
         echo "Output will be stored in: <<parameters.data-dir>>" (creating it if it does not exist...)
         echo "----------------------------------------------------------------------------------------------------"
         mkdir -p <<parameters.data-dir>>
