@@ -211,7 +211,7 @@ workflows:
           filters: *integration-dev_filters
           post-steps: *cleanup-git-tag
           requires:
-          	- integration-tests-1-dev
+            - integration-tests-1-dev
 
       # triggered by master branch commits
       - integration-tests-1:
@@ -225,7 +225,7 @@ workflows:
           filters: *integration-master_filters
           post-steps: *cleanup-git-tag
           requires:
-          	- integration-tests-1-master
+            - integration-tests-1-master
 
       # patch, minor, or major publishing
       - dev-promote-prod:
