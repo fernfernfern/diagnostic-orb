@@ -21,6 +21,9 @@ executors:
     docker:
       - image: singapore/lint-condo
 
+  machine:
+    machine: true
+
   macos:
     macos:
       xcode: "10.1.0"
@@ -99,7 +102,7 @@ jobs:
             git tag $INTEGRATION_TAG
             git push origin $INTEGRATION_TAG
 
-  integration-tests:
+  integration-tests-1:
     executor: macos
     steps:
       - checkout
@@ -117,6 +120,16 @@ jobs:
       - diagnostic-orb/memory
       - diagnostic-orb/test-results
       - diagnostic-orb/store-report
+
+    integration-tests-2:
+      executor: machine
+      steps:
+        - checkout
+
+        - diagnostic-orb/env-info
+        - diagnostic-orb/memory
+        - diagnostic-orb/test-results
+        - diagnostic-orb/store-report
 
   dev-promote-prod:
     executor: cli
@@ -187,25 +200,39 @@ workflows:
   integration_tests-prod_deploy:
     jobs:
       # triggered by non-master branch commits
-      - integration-tests:
-          name: integration-tests-dev
+      - integration-tests-1:
+          name: integration-tests-1-dev
+          pre-steps: *add-ssh-keys
+          filters: *integration-dev_filters
+
+      - integration-tests-2:
+          name: integration-tests-2-dev
           pre-steps: *add-ssh-keys
           filters: *integration-dev_filters
           post-steps: *cleanup-git-tag
+          requires:
+          	- integration-tests-1-dev
 
       # triggered by master branch commits
-      - integration-tests:
-          name: integration-tests-master
+      - integration-tests-1:
+          name: integration-tests-1-master
+          pre-steps: *add-ssh-keys
+          filters: *integration-master_filters
+
+      - integration-tests-2:
+          name: integration-tests-2-master
           pre-steps: *add-ssh-keys
           filters: *integration-master_filters
           post-steps: *cleanup-git-tag
+          requires:
+          	- integration-tests-1-master
 
       # patch, minor, or major publishing
       - dev-promote-prod:
           name: dev-promote-patch
           context: orb-publishing
           requires:
-            - integration-tests-master
+            - integration-tests-2-master
           filters:
             branches:
               ignore: /.*/
@@ -216,7 +243,7 @@ workflows:
           name: dev-promote-minor
           context: orb-publishing
           requires:
-            - integration-tests-master
+            - integration-tests-2-master
           filters:
             branches:
               ignore: /.*/
@@ -227,7 +254,7 @@ workflows:
           name: dev-promote-major
           context: orb-publishing
           requires:
-            - integration-tests-master
+            - integration-tests-2-master
           filters:
             branches:
               ignore: /.*/
