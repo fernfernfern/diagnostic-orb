@@ -22,7 +22,7 @@ steps:
         echo "----------------------------------------------------------------------------------------------------"
         echo "This command will generate sample Jest and Python JUnit XML test results."
         echo "----------------------------------------------------------------------------------------------------"
-        echo "Working directory is: $(pwd)"
+        echo "Working directory is:" $(pwd)
         echo "Sample Jest results will be stored in: <<parameters.data-dir>>/jest" (creating it if it does not exist...)
         echo "----------------------------------------------------------------------------------------------------"
         mkdir -p <<parameters.data-dir>>/jest
@@ -35,7 +35,7 @@ steps:
         </testsuites>
         EOF
         echo "----------------------------------------------------------------------------------------------------"
-        echo "Working directory is: $(pwd)"
+        echo "Working directory is:" $(pwd)
         echo "Sample Python results will be stored in: <<parameters.data-dir>>/python" (creating it if it does not exist...)
         echo "----------------------------------------------------------------------------------------------------"
         mkdir -p <<parameters.data-dir>>/python
