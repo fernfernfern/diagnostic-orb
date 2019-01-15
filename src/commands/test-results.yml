@@ -19,12 +19,10 @@ steps:
       name: CircleCI diagnostic report (test-results)
       when: always
       command: |
-        echo "----------------------------------------------------------------------------------------------------"
         echo "This command will generate sample Jest and Python JUnit XML test results."
         echo "----------------------------------------------------------------------------------------------------"
         echo "Working directory is: $(pwd)"
         echo "Sample Jest results will be stored in: <<parameters.data-dir>>/jest (creating it if it does not exist...)"
-        echo "----------------------------------------------------------------------------------------------------"
         mkdir -p <<parameters.data-dir>>/jest
         cat \<< EOF > << parameters.data-dir >>/jest/junit.xml
         <testsuites name="jest tests">
@@ -37,7 +35,6 @@ steps:
         echo "----------------------------------------------------------------------------------------------------"
         echo "Working directory is: $(pwd)"
         echo "Sample Python results will be stored in: <<parameters.data-dir>>/python (creating it if it does not exist...)"
-        echo "----------------------------------------------------------------------------------------------------"
         mkdir -p <<parameters.data-dir>>/python
         cat \<< EOF > <<parameters.data-dir>>/python/junit.xml
         <?xml version="1.0" encoding="UTF-8"?>
