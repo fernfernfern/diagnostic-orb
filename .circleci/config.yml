@@ -121,15 +121,15 @@ jobs:
       - diagnostic-orb/test-results
       - diagnostic-orb/store-report
 
-    integration-tests-2:
-      executor: machine
-      steps:
-        - checkout
+  integration-tests-2:
+    executor: machine
+    steps:
+      - checkout
 
-        - diagnostic-orb/env-info
-        - diagnostic-orb/memory
-        - diagnostic-orb/test-results
-        - diagnostic-orb/store-report
+      - diagnostic-orb/env-info
+      - diagnostic-orb/memory
+      - diagnostic-orb/test-results
+      - diagnostic-orb/store-report
 
   dev-promote-prod:
     executor: cli
@@ -207,11 +207,10 @@ workflows:
 
       - integration-tests-2:
           name: integration-tests-2-dev
+          requires: [integration-tests-1-dev]
           pre-steps: *add-ssh-keys
           filters: *integration-dev_filters
           post-steps: *cleanup-git-tag
-          requires:
-            - integration-tests-1-dev
 
       # triggered by master branch commits
       - integration-tests-1:
@@ -221,18 +220,16 @@ workflows:
 
       - integration-tests-2:
           name: integration-tests-2-master
+          requires: [integration-tests-1-master]
           pre-steps: *add-ssh-keys
           filters: *integration-master_filters
           post-steps: *cleanup-git-tag
-          requires:
-            - integration-tests-1-master
 
       # patch, minor, or major publishing
       - dev-promote-prod:
           name: dev-promote-patch
           context: orb-publishing
-          requires:
-            - integration-tests-2-master
+          requires: [integration-tests-2-master]
           filters:
             branches:
               ignore: /.*/
@@ -242,8 +239,7 @@ workflows:
       - dev-promote-prod:
           name: dev-promote-minor
           context: orb-publishing
-          requires:
-            - integration-tests-2-master
+          requires: [integration-tests-2-master]
           filters:
             branches:
               ignore: /.*/
@@ -253,8 +249,7 @@ workflows:
       - dev-promote-prod:
           name: dev-promote-major
           context: orb-publishing
-          requires:
-            - integration-tests-2-master
+          requires: [integration-tests-2-master]
           filters:
             branches:
               ignore: /.*/
