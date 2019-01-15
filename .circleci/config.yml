@@ -162,7 +162,7 @@ workflows:
 
       - publish-dev:
           requires:
-            - validate
+            - pack-validate
           context: orb-publishing
 
       - trigger-integration:
