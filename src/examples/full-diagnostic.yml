@@ -30,10 +30,11 @@ usage:
     build-and-deploy:
       jobs:
         - build:
-            post-steps:
+            pre-steps:
               - diagnostic-orb/env-info
               - diagnostic-orb/memory
               - diagnostic-orb/test-results
+            post-steps:
               - diagnostic-orb/store-report
 
         - deploy:
