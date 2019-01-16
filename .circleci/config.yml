@@ -5,6 +5,54 @@ orbs:
   diagnostic-orb: circleci/diagnostic-orb@dev:alpha
   circle-compare-url: iynere/compare-url@0.4.4
 
+commands:
+  build-docker-image:
+    steps:
+      - run: docker build -t=image .
+      - run: |
+          if [[ -n "$(docker images -q image)" ]]; then
+            echo "image built! good!"
+          else
+            "image wasn't built. bad!"
+            exit 1
+          fi
+  verify-dlc-cleared:
+    steps:
+      - run: |
+          if [[ -n "$(docker images -q image)" ]]; then
+            echo "image still exists! bad!"
+            edit 1
+          else
+            "image cleared! good!"
+          fi
+
+  test-clear-dlc:
+    parameters:
+      docker:
+        type: boolean
+        default: false
+      machine:
+        type: boolean
+        default: false
+      macos:
+        type: boolean
+        default: false 
+    steps:
+      - run: echo from busybox > Dockerfile
+      - when:
+          condition: <<parameters.machine>>
+          steps:
+            - build-docker-image
+            - diagnostic-orb/clear-dlc
+            - verify-dlc-cleard
+      - when:
+          condition: <<parameters.docker>>
+          steps:
+            - setup_remote_docker
+            - build-docker-image
+            - diagnostic-orb/clear-dlc
+            - verify-dlc-cleard
+
 executors:
   cli:
     resource_class: small
@@ -130,6 +178,7 @@ jobs:
     steps:
       - checkout
 
+      - test-clear-dlc: {machine: true}
       - diagnostic-orb/env-info
       - diagnostic-orb/memory
       - diagnostic-orb/test-results
@@ -140,6 +189,7 @@ jobs:
     steps:
       - checkout
 
+      - test-clear-dlc: {docker: true}
       - diagnostic-orb/env-info
       - diagnostic-orb/memory
       - diagnostic-orb/store-report
