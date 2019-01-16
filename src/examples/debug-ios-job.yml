@@ -1,5 +1,5 @@
 description: >
-  Use the orb's ios-logs and post-steps commands to store iOS diagnostic info for debugging
+  Use the orb's ios-logs and store-report commands to store iOS diagnostic info for debugging
 
 usage:
   version: 2.1
