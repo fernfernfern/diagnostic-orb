@@ -28,7 +28,7 @@ steps:
         brew list --versions > <<parameters.data-dir>>/brew.log || true
         yarn global list > <<parameters.data-dir>>/yarn-global.log || true
         gem query --local > <<parameters.data-dir>>/gem.log || true
-        npm --version || true
+        npm --version > <<parameters.data-dir>>/npm-version.log || true
         npm ls --global > <<parameters.data-dir>>/npm-global.log || true
         npm ls > <<parameters.data-dir>>/npm.log || true
         echo "----------------------------------------------------------------------------------------------------"

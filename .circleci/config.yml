@@ -214,36 +214,36 @@ workflows:
     jobs:
       # triggered by non-master branch commits
       - integration-tests-1:
-          name: integration-tests-1-dev
+          name: integration-tests-macos-dev
           pre-steps: *add-ssh-keys
           filters: *integration-dev_filters
 
       - integration-tests-2:
-          name: integration-tests-2-dev
+          name: integration-tests-machine-dev
           pre-steps: *add-ssh-keys
           filters: *integration-dev_filters
 
       - integration-tests-3:
-          name: integration-tests-3-dev
-          requires: [integration-tests-1-dev, integration-tests-2-dev]
+          name: integration-tests-node-dev
+          requires: [integration-tests-macos-dev, integration-tests-machine-dev]
           pre-steps: *add-ssh-keys
           filters: *integration-dev_filters
           post-steps: *cleanup-git-tag
 
       # triggered by master branch commits
       - integration-tests-1:
-          name: integration-tests-1-master
+          name: integration-tests-macos-master
           pre-steps: *add-ssh-keys
           filters: *integration-master_filters
 
       - integration-tests-2:
-          name: integration-tests-2-master
+          name: integration-tests-machine-master
           pre-steps: *add-ssh-keys
-          filters: *integration-dev_filters
+          filters: *integration-master_filters
 
       - integration-tests-3:
-          name: integration-tests-3-master
-          requires: [integration-tests-1-master, integration-tests-2-master]
+          name: integration-tests-node-master
+          requires: [integration-tests-macos-master, integration-tests-machine-master]
           pre-steps: *add-ssh-keys
           filters: *integration-master_filters
           post-steps: *cleanup-git-tag
