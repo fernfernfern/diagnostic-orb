@@ -56,6 +56,13 @@ Create sample test JUnit XML output for Test Summary report. Helpful if you want
 diagnostic-orb/test-results
 ```
 
+### diagnostic-orb/clear-dlc
+Remove cached docker layers. Helpful to troubleshoot issues with image caches or to clear image cache space.
+
+```yaml
+diagnostic-orb/clear-dlc
+```
+
 ## Contributing
 We welcome [issues](https://github.com/CircleCI-Public/diagnostic-orb/issues) (bugs or feature requests) and [pull requests](https://github.com/CircleCI-Public/diagnostic-orb/pulls)!
 

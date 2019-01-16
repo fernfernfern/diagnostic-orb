@@ -1,0 +1,24 @@
+description: >
+  Remove cached docker image layers.
+
+parameters:
+  add-remote:
+    type: boolean
+    default: false
+    description: >
+      Run setup_remote_docker as part of this commend.
+
+steps:
+  - when:
+      condition: <<parameters.add-remote>>
+      steps:
+        - setup_remote_docker
+  - run:
+      name: CircleCI diagnostic report (clear-dlc)
+      when: always
+      command: |
+        echo "----------------------------------------------------------------------------------------------------"
+        echo "This command delete cached docker image layers"
+        echo "It can be helpful when debugging issues with images or running out of disk space."
+        echo "----------------------------------------------------------------------------------------------------"
+        docker images --no-trunc --format '{{.ID}}' | xargs docker rmi

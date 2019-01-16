@@ -1,0 +1,49 @@
+description: >
+  Use clear DLC to remove old docker layer caches
+
+usage:
+  version: 2.1
+
+  orbs:
+    diagnostic-orb: circleci/diagnostic-orb@1.0.0
+
+  executors:
+    machine:
+      machine: true
+    docker:
+      docker:
+        - image: circleci/node
+
+  jobs:
+    docker-machine:
+      executor: machine
+      steps:
+        - checkout
+        # rest of your build steps
+    docker-docker:
+      executor: docker
+      steps:
+        - checkout
+        # rest of your deploy steps
+    remote-docker:
+      executor: docker
+      steps:
+        - checkout
+        - setup_remote_docker
+        - diagnostic-orb/clear-dlc
+        # rest of your deploy steps
+
+  workflows:
+    build-and-deploy:
+      jobs:
+        - docker-machine:
+            pre-steps:
+              - diagnostic-orb/clear-dlc
+        - docker-docker:
+            pre-steps:
+              - diagnostic-orb/clear-dlc:
+                  add-remote: true
+                # You can have the command run setup_remote_docker if you want
+        - remote-docker
+          # If you have setup_remote_docker already in your job somewhere
+          # add the command directly to the job after setup_remote_docker
