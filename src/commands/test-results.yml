@@ -1,17 +1,29 @@
+description: >
+  Generate sample JUNIT XML, for help in debugging Test Summary issues
+
 parameters:
   data-dir:
-    description: where to output sample test data
-    default: ~/.ccidiag/sample-test-results
     type: string
+    default: ~/.ccidiag/test-results
+    description: >
+      Directory in which to output sample test results (will be created if necessary)
+
   upload:
-    description: Should we upload the test results for a Test Summary?
-    default: false
     type: boolean
+    default: true
+    description: >
+      Should these sample test results be stored, so they display in Test Summary?
+
 steps:
   - run:
-      name: Generating Test Data
+      name: CircleCI diagnostic report (test-results)
+      when: always
       command: |
-        mkdir -p << parameters.data-dir >>/jest
+        echo "This command will generate sample Jest and Python JUnit XML test results."
+        echo "----------------------------------------------------------------------------------------------------"
+        echo "Working directory is: $(pwd)"
+        echo "Sample Jest results will be stored in: <<parameters.data-dir>>/jest (creating it if it does not exist...)"
+        mkdir -p <<parameters.data-dir>>/jest
         cat \<< EOF > << parameters.data-dir >>/jest/junit.xml
         <testsuites name="jest tests">
           <testsuite name="undefined" errors="0" failures="0" skipped="0" timestamp="2018-05-16T22:26:25" time="4.21" tests="1">
@@ -20,9 +32,11 @@ steps:
           </testsuite>
         </testsuites>
         EOF
-
-        mkdir -p << parameters.data-dir >>/python
-        cat \<< EOF > << parameters.data-dir >>/python/junit.xml
+        echo "----------------------------------------------------------------------------------------------------"
+        echo "Working directory is: $(pwd)"
+        echo "Sample Python results will be stored in: <<parameters.data-dir>>/python (creating it if it does not exist...)"
+        mkdir -p <<parameters.data-dir>>/python
+        cat \<< EOF > <<parameters.data-dir>>/python/junit.xml
         <?xml version="1.0" encoding="UTF-8"?>
         <testsuite errors="0" failures="0" name="test_api.APITestCase-20180507233023" skipped="0" tests="9" time="2.250">
           <testcase classname="test_api.APITestCase" name="test_404" time="0.153"/>
@@ -40,11 +54,14 @@ steps:
         <![CDATA[]]>	</system-err>
         </testsuite>
         EOF
+        echo "----------------------------------------------------------------------------------------------------"
+        echo "Sample test results have been stored in <<parameters.data-dir>>/jest and <<parameters.data-dir>>/python"
+
   - store_artifacts:
-      path: << parameters.data-dir >>
-      destination: ccidiag/sample-data
+      path: <<parameters.data-dir>>
+
   - when:
-      condition: << parameters.upload >>
+      condition: <<parameters.upload>>
       steps:
         - store_test_results:
-            path: << parameters.data-dir >>
+            path: <<parameters.data-dir>>

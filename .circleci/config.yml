@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  orb-tools: circleci/orb-tools@2.0.2
+  orb-tools: circleci/orb-tools@3.0.0
   diagnostic-orb: circleci/diagnostic-orb@dev:alpha
   circle-compare-url: iynere/compare-url@0.4.4
 
@@ -21,9 +21,16 @@ executors:
     docker:
       - image: singapore/lint-condo
 
+  machine:
+    machine: true
+
   macos:
     macos:
       xcode: "10.1.0"
+
+  node:
+    docker:
+      - image: circleci/node
 
 jobs:
   lint:
@@ -32,24 +39,7 @@ jobs:
       - checkout
       - run: yamllint .
 
-  validate:
-    executor: cli
-    steps:
-      - checkout
-
-      - orb-tools/pack:
-          source: src
-          destination: orb.yml
-
-      - run: circleci orb validate orb.yml
-
-      - store_artifacts:
-          path: orb.yml
-
-      - persist_to_workspace:
-          root: .
-          paths:
-            - orb.yml
+  # validate goes here: see workflow
 
   publish-dev:
     executor: cli
@@ -116,7 +106,7 @@ jobs:
             git tag $INTEGRATION_TAG
             git push origin $INTEGRATION_TAG
 
-  integration-tests:
+  integration-tests-1:
     executor: macos
     steps:
       - checkout
@@ -132,10 +122,27 @@ jobs:
       - diagnostic-orb/env-info
       - diagnostic-orb/ios-logs
       - diagnostic-orb/memory
-      - diagnostic-orb/sample-test-data:
-          upload: true
-      - diagnostic-orb/simulate
-      - diagnostic-orb/post-steps
+      - diagnostic-orb/test-results
+      - diagnostic-orb/store-report
+
+  integration-tests-2:
+    executor: machine
+    steps:
+      - checkout
+
+      - diagnostic-orb/env-info
+      - diagnostic-orb/memory
+      - diagnostic-orb/test-results
+      - diagnostic-orb/store-report
+
+  integration-tests-3:
+    executor: node
+    steps:
+      - checkout
+
+      - diagnostic-orb/env-info
+      - diagnostic-orb/memory
+      - diagnostic-orb/store-report
 
   dev-promote-prod:
     executor: cli
@@ -172,13 +179,16 @@ workflows:
     jobs:
       - lint
 
-      - validate:
+      - orb-tools/pack:
+          name: pack-validate
+          workspace-path: orb.yml
+          artifact-path: orb.yml
           requires:
             - lint
 
       - publish-dev:
           requires:
-            - validate
+            - pack-validate
           context: orb-publishing
 
       - trigger-integration:
@@ -203,15 +213,37 @@ workflows:
   integration_tests-prod_deploy:
     jobs:
       # triggered by non-master branch commits
-      - integration-tests:
-          name: integration-tests-dev
+      - integration-tests-1:
+          name: integration-tests-macos-dev
+          pre-steps: *add-ssh-keys
+          filters: *integration-dev_filters
+
+      - integration-tests-2:
+          name: integration-tests-machine-dev
+          pre-steps: *add-ssh-keys
+          filters: *integration-dev_filters
+
+      - integration-tests-3:
+          name: integration-tests-node-dev
+          requires: [integration-tests-macos-dev, integration-tests-machine-dev]
           pre-steps: *add-ssh-keys
           filters: *integration-dev_filters
           post-steps: *cleanup-git-tag
 
       # triggered by master branch commits
-      - integration-tests:
-          name: integration-tests-master
+      - integration-tests-1:
+          name: integration-tests-macos-master
+          pre-steps: *add-ssh-keys
+          filters: *integration-master_filters
+
+      - integration-tests-2:
+          name: integration-tests-machine-master
+          pre-steps: *add-ssh-keys
+          filters: *integration-master_filters
+
+      - integration-tests-3:
+          name: integration-tests-node-master
+          requires: [integration-tests-macos-master, integration-tests-machine-master]
           pre-steps: *add-ssh-keys
           filters: *integration-master_filters
           post-steps: *cleanup-git-tag
@@ -220,8 +252,7 @@ workflows:
       - dev-promote-prod:
           name: dev-promote-patch
           context: orb-publishing
-          requires:
-            - integration-tests-master
+          requires: [integration-tests-node-master]
           filters:
             branches:
               ignore: /.*/
@@ -231,8 +262,7 @@ workflows:
       - dev-promote-prod:
           name: dev-promote-minor
           context: orb-publishing
-          requires:
-            - integration-tests-master
+          requires: [integration-tests-node-master]
           filters:
             branches:
               ignore: /.*/
@@ -242,8 +272,7 @@ workflows:
       - dev-promote-prod:
           name: dev-promote-major
           context: orb-publishing
-          requires:
-            - integration-tests-master
+          requires: [integration-tests-node-master]
           filters:
             branches:
               ignore: /.*/
