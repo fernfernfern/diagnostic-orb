@@ -1,14 +1,11 @@
 # Diagnostic Orb
-
 The diagnostic orb is intented to serve two purposes:
 
 1. Help guide people using CircleCI to solve problems and optimize their configurations.
-
 2. Help surface and collect information so CircleCI engineers can help solve problems.
 
 
 ## Usage:
-
 Reference the orb in your config.yml. 2.1 Build Processing must be enabled on the project. Check the bottom of your `Advanced Settings` section in your project settings.
 
 ```yaml
@@ -26,7 +23,7 @@ workflows:
           pre-steps:
             - diagnostic-orb/env-info
           post-steps:
-            - diagnostic-orb/post-steps
+            - diagnostic-orb/store-report
 ```
 
 The commands below are indended to be added as `pre-steps` for jobs you'd like to investigate.
@@ -34,15 +31,29 @@ The commands below are indended to be added as `pre-steps` for jobs you'd like t
 ### diagnostic-orb/env-info
 Generate a report of various kinds of enviroment information. Helpful to find out what packages are install in the enviroment.
 
+```yaml
+diagnostic-orb/env-info
+```
+
+### diagnostic-orb/ios-logs
+Save Fastlane and Xcode information from an iOS job, to be stored as artifacts and inspected later.
+
+```yaml
+diagnostic-orb/ios-logs
+```
+
 ### diagnostic-orb/memory
 Start top as a background process that appends output to a file. Helpful to see memory consumption and process lifecycle over the duration of a job
 
-### diagnostic-orb/sample-test-data
-Create sample test junit output for Test Summary report. Helpful if you want to sanity check if test data collection is working. Pass `upload: true` to have it automatically run `store_test_results`.
+```yaml
+diagnostic-orb/memory
+```
+
+### diagnostic-orb/test-results
+Create sample test JUnit XML output for Test Summary report. Helpful if you want to sanity check if test data collection is working.
 
 ```yaml
-daignostic-orb/sample-test-data:
-  upload: true
+diagnostic-orb/test-results
 ```
 
 ## Contributing
