@@ -252,7 +252,7 @@ workflows:
       - dev-promote-prod:
           name: dev-promote-patch
           context: orb-publishing
-          requires: [integration-tests-3-master]
+          requires: [integration-tests-node-master]
           filters:
             branches:
               ignore: /.*/
@@ -262,7 +262,7 @@ workflows:
       - dev-promote-prod:
           name: dev-promote-minor
           context: orb-publishing
-          requires: [integration-tests-3-master]
+          requires: [integration-tests-node-master]
           filters:
             branches:
               ignore: /.*/
@@ -272,7 +272,7 @@ workflows:
       - dev-promote-prod:
           name: dev-promote-major
           context: orb-publishing
-          requires: [integration-tests-3-master]
+          requires: [integration-tests-node-master]
           filters:
             branches:
               ignore: /.*/
