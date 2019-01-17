@@ -97,7 +97,7 @@ jobs:
 
             if [[ $(git diff $COMMIT_RANGE --name-status | grep -e "src/commands" -e "src/jobs") ]]; then
               INTEGRATION_TAG=<<parameters.tag>>-major-$CIRCLE_BRANCH-${CIRCLE_SHA1:0:7}
-            elif [[ $(git diff $COMMIT_RANGE --name-status | grep -e "src/examples" -e "src/@orb.yml") ]]; then
+            elif [[ $(git diff $COMMIT_RANGE --name-status | grep -e "src/examples" -e "src/executors" -e "src/@orb.yml") ]]; then
               INTEGRATION_TAG=<<parameters.tag>>-minor-$CIRCLE_BRANCH-${CIRCLE_SHA1:0:7}
             elif [[ $(git diff $COMMIT_RANGE --name-status | grep -e "config.yml") ]]; then
               INTEGRATION_TAG=<<parameters.tag>>-patch-$CIRCLE_BRANCH-${CIRCLE_SHA1:0:7}
